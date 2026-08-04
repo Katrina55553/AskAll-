@@ -1,0 +1,24 @@
+# IDE
+.trae/
+
+# Node
+node_modules/
+*.log
+
+# Env
+.env
+
+# Build output
+server/public/
+web/dist/
+
+# Database
+*.db
+*.db-journal
+
+# Credentials (per-bot Cookie / API Key)
+server/src/credentials/
+
+# OS
+.DS_Store
+Thumbs.db
