@@ -24,9 +24,13 @@ class WebBot extends Bot {
       return text;
     }
     const cred = this.getCredential();
-    if (!cred) throw new Error(`${this.name}: 未配置 Cookie`);
+    if (!cred) {
+      const credName =
+        this.meta.credentialType === "cookie" ? "Cookie" : "API Key";
+      throw new Error(`${this.name}: 未配置 ${credName}`);
+    }
     throw new Error(
-      `${this.name}: 该网页版 bot 的逆向接口尚未接入（需对应站点实现文件 bots/implementations/${this.id}.js）`
+      `${this.name}: 该 bot 的接口适配尚未接入（需对应实现文件 bots/implementations/${this.id}.js）`
     );
   }
 
