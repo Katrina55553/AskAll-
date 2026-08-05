@@ -36,8 +36,12 @@ class WebBot extends Bot {
 
   async checkAvailability() {
     if (process.env.ASKALL_MOCK === "1") return !!this.getCredential();
-    // Without a per-site implementation we cannot validate the cookie.
-    return false;
+    // Without a per-site implementation we cannot validate the cookie online.
+    // Throw a descriptive error instead of returning false, so the user does
+    // not mistake "not integrated" for "cookie is wrong / not saved".
+    throw new Error(
+      `${this.name}: 该 bot 尚未接入在线校验（缺少 bots/implementations/${this.id}.js），凭据已保存，可直接提问验证`
+    );
   }
 }
 

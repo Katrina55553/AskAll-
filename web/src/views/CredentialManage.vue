@@ -4,12 +4,18 @@
       <template #header>
         <div class="header">
           <h3>{{ $t("credentials.title") }}</h3>
-          <el-input
-            v-model="keyword"
-            :placeholder="$t('common.loading') === '' ? '' : '搜索 / Search'"
-            clearable
-            style="width: 240px"
-          />
+          <div class="header-actions">
+            <el-button text type="primary" @click="openGuide()">
+              <el-icon style="margin-right: 4px"><QuestionFilled /></el-icon>
+              {{ $t("credentials.guideButton") }}
+            </el-button>
+            <el-input
+              v-model="keyword"
+              :placeholder="$t('common.loading') === '' ? '' : '搜索 / Search'"
+              clearable
+              style="width: 240px"
+            />
+          </div>
         </div>
       </template>
 
@@ -43,12 +49,23 @@
               </el-tag>
             </div>
             <div class="cred-actions">
+              <el-tooltip
+                v-if="bot.credentialType === 'cookie'"
+                :content="$t('credentials.guideTooltip')"
+                placement="top"
+              >
+                <el-button circle size="small" @click="openGuide(bot)">
+                  <el-icon><QuestionFilled /></el-icon>
+                </el-button>
+              </el-tooltip>
               <el-input
                 v-model="inputs[bot.id]"
                 :placeholder="
-                  bot.credentialType === 'cookie'
-                    ? $t('credentials.cookie')
-                    : $t('credentials.apiKey')
+                  bot.configured
+                    ? $t('credentials.savedPlaceholder')
+                    : bot.credentialType === 'cookie'
+                      ? $t('credentials.cookie')
+                      : $t('credentials.apiKey')
                 "
                 :type="visible[bot.id] ? 'text' : 'password'"
                 style="width: 320px"
@@ -86,13 +103,66 @@
         </el-collapse-item>
       </el-collapse>
     </el-card>
+
+    <el-dialog
+      v-model="guideVisible"
+      :title="$t('credentials.guideTitle')"
+      width="560px"
+    >
+      <div v-if="guideBot" class="guide-target">
+        <span>{{ $t("credentials.guideFor") }}：</span>
+        <strong>{{ guideBot.name }}</strong>
+        <el-link
+          v-if="guideBot.homepage"
+          type="primary"
+          :href="guideBot.homepage"
+          target="_blank"
+          style="margin-left: 8px"
+        >
+          {{ guideBot.homepage }}
+          <el-icon style="margin-left: 2px"><TopRight /></el-icon>
+        </el-link>
+      </div>
+
+      <ol class="guide-steps">
+        <li>
+          <template v-if="guideBot && guideBot.homepage">
+            <i18n-t keypath="credentials.guideStep1WithUrl" tag="span">
+              <template #url>
+                <el-link type="primary" :href="guideBot.homepage" target="_blank">
+                  {{ guideBot.homepage }}
+                </el-link>
+              </template>
+            </i18n-t>
+          </template>
+          <template v-else>{{ $t("credentials.guideStep1") }}</template>
+        </li>
+        <li>{{ $t("credentials.guideStep2") }}</li>
+        <li>{{ $t("credentials.guideStep3") }}</li>
+        <li>{{ $t("credentials.guideStep4") }}</li>
+        <li>{{ $t("credentials.guideStep5") }}</li>
+      </ol>
+
+      <el-alert
+        type="warning"
+        :closable="false"
+        :title="$t('credentials.guideTipsTitle')"
+        class="guide-tips"
+      >
+        <ul>
+          <li>{{ $t("credentials.guideTip1") }}</li>
+          <li>{{ $t("credentials.guideTip2") }}</li>
+          <li>{{ $t("credentials.guideTip3") }}</li>
+        </ul>
+      </el-alert>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { View, Hide } from "@element-plus/icons-vue";
+import { View, Hide, QuestionFilled, TopRight } from "@element-plus/icons-vue";
 import { useI18n } from "vue-i18n";
 import api from "../api";
 
@@ -103,6 +173,13 @@ const visible = reactive({});
 const validating = reactive({});
 const keyword = ref("");
 const activeGroups = ref(["api", "madeInChina", "free", "paid"]);
+const guideVisible = ref(false);
+const guideBot = ref(null);
+
+function openGuide(bot) {
+  guideBot.value = bot || null;
+  guideVisible.value = true;
+}
 
 const GROUP_ORDER = ["free", "paid", "api", "madeInChina"];
 
@@ -134,10 +211,14 @@ async function load() {
 onMounted(load);
 
 async function save(bot) {
-  await api.put(`/credentials/${bot.id}`, { value: inputs[bot.id] });
-  inputs[bot.id] = "";
-  ElMessage.success(t("credentials.saveSuccess"));
-  await load();
+  try {
+    await api.put(`/credentials/${bot.id}`, { value: inputs[bot.id] });
+    inputs[bot.id] = "";
+    ElMessage.success(t("credentials.saveSuccess"));
+    await load();
+  } catch (e) {
+    ElMessage.error(e.response?.data?.error || e.message);
+  }
 }
 
 async function validate(bot) {
@@ -198,5 +279,28 @@ async function clear(bot) {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.guide-target {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--el-fill-color-light);
+  border-radius: 4px;
+  font-size: 14px;
+}
+.guide-steps {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  line-height: 1.9;
+  font-size: 14px;
+}
+.guide-tips ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  line-height: 1.8;
 }
 </style>
