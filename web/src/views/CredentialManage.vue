@@ -172,7 +172,7 @@ const inputs = reactive({});
 const visible = reactive({});
 const validating = reactive({});
 const keyword = ref("");
-const activeGroups = ref(["api", "madeInChina", "free", "paid"]);
+const activeGroups = ref(["free", "api"]);
 const guideVisible = ref(false);
 const guideBot = ref(null);
 
@@ -181,7 +181,7 @@ function openGuide(bot) {
   guideVisible.value = true;
 }
 
-const GROUP_ORDER = ["free", "paid", "api", "madeInChina"];
+const GROUP_ORDER = ["free", "api"];
 
 const groups = computed(() => {
   const kw = keyword.value.trim().toLowerCase();

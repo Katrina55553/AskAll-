@@ -32,9 +32,7 @@ export default {
     imageSkipped: "部分 AI 不支持图片，已忽略",
     groups: {
       free: "免费",
-      paid: "付费",
       api: "API",
-      madeInChina: "国产",
     },
   },
   progress: {

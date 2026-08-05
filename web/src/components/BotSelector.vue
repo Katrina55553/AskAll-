@@ -49,8 +49,8 @@ const props = defineProps({
 const emit = defineEmits(["update:selected"]);
 const { t } = useI18n();
 
-const GROUP_ORDER = ["free", "paid", "api", "madeInChina"];
-const activeGroups = ref(["free", "api", "madeInChina"]);
+const GROUP_ORDER = ["free", "api"];
+const activeGroups = ref(["free", "api"]);
 
 const groups = computed(() =>
   GROUP_ORDER.map((key) => ({
