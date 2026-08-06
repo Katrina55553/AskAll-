@@ -5,6 +5,18 @@ const express = require("express");
 const cors = require("cors");
 const config = require("./config");
 
+// 启动时自动将旧明文凭据迁移为 AES-256-GCM 加密格式
+try {
+  const result = require("./bots/credentialStore").migrateAll();
+  if (result.migrated > 0) {
+    console.log(
+      `[startup] 凭据加密迁移完成: ${result.migrated}/${result.scanned} 已加密, ${result.failed} 失败`
+    );
+  }
+} catch (e) {
+  console.warn("[startup] 凭据迁移失败:", e.message);
+}
+
 const app = express();
 
 app.use(cors());
