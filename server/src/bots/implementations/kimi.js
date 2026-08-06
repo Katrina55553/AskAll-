@@ -5,16 +5,15 @@ const credentialStore = require("../credentialStore");
 /**
  * Kimi (kimi.moonshot.cn) web adapter, ported from ChatALL's KimiBot.
  *
- * Auth note: Kimi's web API does NOT authenticate via Cookie. It uses a
- * refresh_token (stored by the site in localStorage) which is exchanged for
- * a short-lived access_token:
- *   GET /api/auth/token/refresh  (Authorization: Bearer <refresh_token>)
+ * ⚠️ 认证方式：Kimi 网页版不使用 Cookie 认证，而是使用 localStorage 中的
+ * refresh_token。用户需按以下步骤获取：
+ *   1. 打开 https://kimi.moonshot.cn 并登录
+ *   2. F12 → Application（应用） → Local Storage（本地存储）
+ *   3. 找到 key 为 "refresh_token" 的条目，复制其 value
+ *   4. 将该 value 粘贴到凭据管理中
  *
- * The pasted credential may be:
- *   - the bare refresh_token (recommended), or
- *   - a full Cookie / localStorage dump containing "refresh_token=<value>"
- * The rotated refresh_token is persisted back to the credential store so
- * the credential stays valid across sessions.
+ * 工作流程：refresh_token → /api/auth/token/refresh → access_token → API 调用
+ * 轮换后的 refresh_token 会自动写回凭据存储，保持长期有效。
  */
 class KimiBot extends Bot {
   static BASE = "https://kimi.moonshot.cn";
@@ -26,9 +25,25 @@ class KimiBot extends Bot {
     return m ? m[1] : value;
   }
 
+  /** 检测用户是否误粘贴了 Cookie（Kimi 不支持 Cookie 认证）。 */
+  isLikelyCookie(value) {
+    const v = String(value || "").trim();
+    // Cookie 通常包含分号和等号，且不含空格
+    return v.includes(";") && v.includes("=") && !v.startsWith("eyJ");
+  }
+
   async refreshTokens() {
     const cred = this.getCredential();
     if (!cred) throw new Error(`${this.name}: 未配置凭据`);
+
+    // 检测用户是否误粘贴了 Cookie
+    if (this.isLikelyCookie(cred.value)) {
+      throw new Error(
+        `${this.name}: 检测到 Cookie 格式，但 Kimi 不支持 Cookie 认证。` +
+        `请获取 localStorage 中的 refresh_token：F12 → Application → Local Storage → refresh_token`
+      );
+    }
+
     const refreshToken = this.extractRefreshToken(cred.value);
     const res = await axios.get(`${KimiBot.BASE}/api/auth/token/refresh`, {
       headers: { Authorization: `Bearer ${refreshToken}` },
@@ -37,7 +52,8 @@ class KimiBot extends Bot {
     });
     if (res.status !== 200 || !res.data?.access_token) {
       throw new Error(
-        `${this.name}: refresh_token 无效或已过期（HTTP ${res.status}），请重新获取`
+        `${this.name}: refresh_token 无效或已过期（HTTP ${res.status}）。` +
+        `请重新获取：F12 → Application → Local Storage → refresh_token`
       );
     }
     // Persist the rotated refresh_token so it never goes stale
@@ -114,7 +130,10 @@ class KimiBot extends Bot {
 
   async checkAvailability() {
     if (process.env.ASKALL_MOCK === "1") return !!this.getCredential();
-    if (!this.getCredential()) return false;
+    const cred = this.getCredential();
+    if (!cred) return false;
+    // Cookie 格式的凭据直接判定不可用（Kimi 需要 refresh_token）
+    if (this.isLikelyCookie(cred.value)) return false;
     try {
       await this.refreshTokens();
       return true;
