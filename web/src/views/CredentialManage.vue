@@ -124,8 +124,17 @@
         </el-link>
       </div>
 
+      <el-alert
+        v-if="guideBot && $te(`credentials.hints.${guideBot.id}`)"
+        type="info"
+        :closable="false"
+        :title="$t(`credentials.hints.${guideBot.id}`)"
+        style="margin-bottom: 12px"
+      />
+
       <ol class="guide-steps">
         <li>
+          <strong>{{ $t("credentials.guideStep1Title") }}</strong>
           <template v-if="guideBot && guideBot.homepage">
             <i18n-t keypath="credentials.guideStep1WithUrl" tag="span">
               <template #url>
@@ -137,10 +146,30 @@
           </template>
           <template v-else>{{ $t("credentials.guideStep1") }}</template>
         </li>
-        <li>{{ $t("credentials.guideStep2") }}</li>
-        <li>{{ $t("credentials.guideStep3") }}</li>
-        <li>{{ $t("credentials.guideStep4") }}</li>
-        <li>{{ $t("credentials.guideStep5") }}</li>
+        <li>
+          <strong>{{ $t("credentials.guideStep2Title") }}</strong>
+          {{ $t("credentials.guideStep2") }}
+        </li>
+        <li>
+          <strong>{{ $t("credentials.guideStep3Title") }}</strong>
+          {{ $t("credentials.guideStep3") }}
+        </li>
+        <li>
+          <strong>{{ $t("credentials.guideStep4Title") }}</strong>
+          {{ $t("credentials.guideStep4", { name: guideBotName }) }}
+        </li>
+        <li>
+          <strong>{{ $t("credentials.guideStep5Title") }}</strong>
+          {{ $t("credentials.guideStep5", { domain: guideBotDomain }) }}
+        </li>
+        <li>
+          <strong>{{ $t("credentials.guideStep6Title") }}</strong>
+          {{ $t("credentials.guideStep6") }}
+        </li>
+        <li>
+          <strong>{{ $t("credentials.guideStep7Title") }}</strong>
+          {{ $t("credentials.guideStep7", { name: guideBotName }) }}
+        </li>
       </ol>
 
       <el-alert
@@ -180,6 +209,17 @@ function openGuide(bot) {
   guideBot.value = bot || null;
   guideVisible.value = true;
 }
+
+const guideBotName = computed(() => guideBot.value?.name || t("credentials.guideGenericName"));
+const guideBotDomain = computed(() => {
+  const url = guideBot.value?.homepage;
+  if (!url) return t("credentials.guideGenericDomain");
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+});
 
 const GROUP_ORDER = ["free", "api"];
 
