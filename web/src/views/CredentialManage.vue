@@ -68,6 +68,7 @@
                       : $t('credentials.apiKey')
                 "
                 :type="visible[bot.id] ? 'text' : 'password'"
+                autocomplete="new-password"
                 style="width: 320px"
                 clearable
               >
